@@ -2,8 +2,8 @@
 <html lang="ko">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>도서 관리 시스템</title>
   <link rel="stylesheet" type="text/css" href="./css/form.css" />
 </head>
@@ -17,22 +17,22 @@
       <div class="form-grid">
         <div class="form-group">
           <label for="title">제목:</label>
-          <input type="text" name="title" id="title" required />
+          <input type="text" name="title" id="title" />
         </div>
 
         <div class="form-group">
           <label for="author">저자:</label>
-          <input type="text" name="author" id="author" required />
+          <input type="text" name="author" id="author" />
         </div>
 
         <div class="form-group">
           <label for="isbn">ISBN:</label>
-          <input type="text" name="isbn" id="isbn" required />
+          <input type="text" name="isbn" id="isbn" />
         </div>
 
         <div class="form-group">
           <label for="price">가격:</label>
-          <input type="number" name="price" id="price" min="0" required />
+          <input type="number" name="price" id="price" min="0" />
         </div>
 
         <div class="form-group">
@@ -40,9 +40,8 @@
           <input type="date" name="publishDate" id="publishDate" />
         </div>
 
-        <div class="form-actions">
-          <button type="submit">도서 등록</button>
-        </div>
+        <!-- 학생 템플릿과 동일하게, 버튼은 form-grid 안의 마지막에 위치 -->
+        <button type="submit">도서 등록</button>
       </div>
     </form>
   </div>
@@ -68,82 +67,43 @@
     // 전역변수
     const API_BASE_URL = "http://localhost:8080";
 
-    // DOM
+    // DOM 엘리먼트 가져오기
     const bookForm = document.getElementById("bookForm");
     const bookTableBody = document.getElementById("bookTableBody");
 
-    // 초기 로드 훅
+    // Document Load 이벤트 처리하기
     document.addEventListener("DOMContentLoaded", function () {
-      console.log("도서 목록 로드 준비...");
-      // loadBooks(); // 필요시 구현
+      loadBooks();
     });
 
-    // 제출 이벤트
+    // BookForm 의 Submit 이벤트 처리하기
     bookForm.addEventListener("submit", function (event) {
+      // 기본 이벤트 동작 막기
       event.preventDefault();
-      console.log("폼 제출 감지");
+      console.log("Form 이 체출 되었음....");
 
-      // FormData 사용
-      const formData = new FormData(bookForm);
-      formData.forEach((value, key) => console.log(`${key} = ${value}`));
+      // FormData 객체생성 <form>엘리먼트를 객체로 변환
+      const bookFormData = new FormData(bookForm);
+      bookFormData.forEach((value, key) => {
+        console.log(key + ' = ' + value);
+      });
 
-      // DTO 필드와 동일한 키로 객체화
+      // 사용자 정의 Book Object Literal 객체생성 (공백 제거 trim())
       const bookData = {
-        title: formData.get("title").trim(),
-        author: formData.get("author").trim(),
-        isbn: formData.get("isbn").trim(),
-        price: formData.get("price") ? Number(formData.get("price")) : null,
-        publishDate: formData.get("publishDate") || null, // yyyy-mm-dd
+        title: (bookFormData.get("title") || "").trim(),
+        author: (bookFormData.get("author") || "").trim(),
+        isbn: (bookFormData.get("isbn") || "").trim(),
+        price: bookFormData.get("price") ? Number(bookFormData.get("price")) : null,
+        publishDate: bookFormData.get("publishDate") || null
       };
+
+      // 1-4 단계: FormData 사용까지 (서버 통신은 1-5에서 fetch로)
       console.log("bookData:", bookData);
+    }); // submit 이벤트
 
-      // (선택) 간단 검증
-      if (!bookData.title || !bookData.author || !bookData.isbn) {
-        alert("제목/저자/ISBN은 필수입니다.");
-        return;
-      }
-      if (bookData.price !== null && (isNaN(bookData.price) || bookData.price < 0)) {
-        alert("가격은 0 이상의 숫자여야 합니다.");
-        return;
-      }
-
-      // ↓ 서버 연동은 1-5에서 fetch()로 진행 예정
-      // fetch(`${API_BASE_URL}/api/books`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify(bookData),
-      // }).then(res => res.json()).then(data => {
-      //   console.log("등록 결과:", data);
-      //   appendRow(data); // 등록 후 리스트에 추가
-      // });
-
-      // 데모용: 화면에 바로 추가
-      appendRow(bookData);
-      bookForm.reset();
-    });
-
-    // 행 추가 유틸
-    function appendRow(book) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${escapeHtml(book.title || "")}</td>
-        <td>${escapeHtml(book.author || "")}</td>
-        <td>${escapeHtml(book.isbn || "")}</td>
-        <td>${book.price ?? ""}</td>
-        <td>${book.publishDate ?? ""}</td>
-        <td><button type="button">삭제</button></td>
-      `;
-      bookTableBody.appendChild(tr);
-    }
-
-    // 간단 XSS 방지
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+    // Book(도서) 목록을 Load 하는 함수
+    function loadBooks() {
+      console.log("도서 목록 Load 중.....");
     }
   </script>
 </body>
