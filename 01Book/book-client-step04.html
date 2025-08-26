@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>도서 관리 시스템</title>
+  <link rel="stylesheet" type="text/css" href="./css/form.css" />
+</head>
+
+<body>
+  <h1>도서 관리 시스템</h1>
+
+  <div class="form-container">
+    <h2>도서 등록</h2>
+    <form id="bookForm">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="title">제목:</label>
+          <input type="text" name="title" id="title" required />
+        </div>
+
+        <div class="form-group">
+          <label for="author">저자:</label>
+          <input type="text" name="author" id="author" required />
+        </div>
+
+        <div class="form-group">
+          <label for="isbn">ISBN:</label>
+          <input type="text" name="isbn" id="isbn" required />
+        </div>
+
+        <div class="form-group">
+          <label for="price">가격:</label>
+          <input type="number" name="price" id="price" min="0" required />
+        </div>
+
+        <div class="form-group">
+          <label for="publishDate">출판일:</label>
+          <input type="date" name="publishDate" id="publishDate" />
+        </div>
+
+        <div class="form-actions">
+          <button type="submit">도서 등록</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-container">
+    <h2>도서 리스트</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>제목</th>
+          <th>저자</th>
+          <th>ISBN</th>
+          <th>가격</th>
+          <th>출판일</th>
+          <th>액션</th>
+        </tr>
+      </thead>
+      <tbody id="bookTableBody"></tbody>
+    </table>
+  </div>
+
+  <script type="text/javascript">
+    // 전역변수
+    const API_BASE_URL = "http://localhost:8080";
+
+    // DOM
+    const bookForm = document.getElementById("bookForm");
+    const bookTableBody = document.getElementById("bookTableBody");
+
+    // 초기 로드 훅
+    document.addEventListener("DOMContentLoaded", function () {
+      console.log("도서 목록 로드 준비...");
+      // loadBooks(); // 필요시 구현
+    });
+
+    // 제출 이벤트
+    bookForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      console.log("폼 제출 감지");
+
+      // FormData 사용
+      const formData = new FormData(bookForm);
+      formData.forEach((value, key) => console.log(`${key} = ${value}`));
+
+      // DTO 필드와 동일한 키로 객체화
+      const bookData = {
+        title: formData.get("title").trim(),
+        author: formData.get("author").trim(),
+        isbn: formData.get("isbn").trim(),
+        price: formData.get("price") ? Number(formData.get("price")) : null,
+        publishDate: formData.get("publishDate") || null, // yyyy-mm-dd
+      };
+      console.log("bookData:", bookData);
+
+      // (선택) 간단 검증
+      if (!bookData.title || !bookData.author || !bookData.isbn) {
+        alert("제목/저자/ISBN은 필수입니다.");
+        return;
+      }
+      if (bookData.price !== null && (isNaN(bookData.price) || bookData.price < 0)) {
+        alert("가격은 0 이상의 숫자여야 합니다.");
+        return;
+      }
+
+      // ↓ 서버 연동은 1-5에서 fetch()로 진행 예정
+      // fetch(`${API_BASE_URL}/api/books`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify(bookData),
+      // }).then(res => res.json()).then(data => {
+      //   console.log("등록 결과:", data);
+      //   appendRow(data); // 등록 후 리스트에 추가
+      // });
+
+      // 데모용: 화면에 바로 추가
+      appendRow(bookData);
+      bookForm.reset();
+    });
+
+    // 행 추가 유틸
+    function appendRow(book) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(book.title || "")}</td>
+        <td>${escapeHtml(book.author || "")}</td>
+        <td>${escapeHtml(book.isbn || "")}</td>
+        <td>${book.price ?? ""}</td>
+        <td>${book.publishDate ?? ""}</td>
+        <td><button type="button">삭제</button></td>
+      `;
+      bookTableBody.appendChild(tr);
+    }
+
+    // 간단 XSS 방지
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+
+</html>
