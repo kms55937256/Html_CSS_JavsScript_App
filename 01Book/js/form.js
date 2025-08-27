@@ -1,142 +1,172 @@
-//전역변수
-const API_BASE_URL = "http://localhost:8080";
+// ======== 설정 ========
+const API_BASE = "http://localhost:8080/api/books"; // SpringBoot 컨트롤러(@RequestMapping("/api/books"))와 일치
 
-//DOM 엘리먼트 가져오기
-const studentForm = document.getElementById("studentForm");
-const studentTableBody = document.getElementById("studentTableBody");
+// ======== 유틸 ========
+function $(sel) { return document.querySelector(sel); }
+function showError(msg) {
+  const el = $("#formError");
+  el.textContent = msg || "";
+  el.style.display = msg ? "inline" : "none";
+}
 
-//Document Load 이벤트 처리하기
-document.addEventListener("DOMContentLoaded", function () {
-    loadStudents();
+// ======== 1) 입력값 검증 ========
+/**
+ * 실습 요구사항: 입력 데이터 값을 검증하는 validateBook() 함수
+ * @param {{title:string, author:string, isbn:string, price:number|string, publishDate?:string}} book
+ * @returns {true | string}  true면 통과, string이면 에러 메시지
+ */
+function validateBook(book) {
+  if (!book.title || book.title.trim() === "") return "제목은 필수입니다.";
+  if (!book.author || book.author.trim() === "") return "저자는 필수입니다.";
+  if (!book.isbn || book.isbn.trim() === "") return "ISBN은 필수입니다.";
+
+  // 가격: 정수/양수
+  if (book.price === "" || book.price === null || book.price === undefined) {
+    return "가격은 필수입니다.";
+  }
+  const priceNum = Number(book.price);
+  if (!Number.isFinite(priceNum) || priceNum <= 0) return "가격은 0보다 큰 숫자여야 합니다.";
+
+  // 출판일(선택) — 값이 있으면 YYYY-MM-DD 형태인지 정도만 체크
+  if (book.publishDate && !/^\d{4}-\d{2}-\d{2}$/.test(book.publishDate)) {
+    return "출판일 형식이 올바르지 않습니다. (예: 2025-05-07)";
+  }
+
+  return true;
+}
+
+// ======== 2) 목록 가져오기 + 렌더 ========
+/**
+ * fetch()로 백엔드에서 책 목록을 가져와 화면에 출력
+ * 실습 요구사항: loadBooks() & renderBookTable(books)
+ */
+async function loadBooks() {
+  try {
+    const resp = await fetch(API_BASE, { method: "GET" });
+    if (!resp.ok) throw new Error(`목록 조회 실패: ${resp.status}`);
+    const books = await resp.json();
+    renderBookTable(books);
+  } catch (err) {
+    console.error(err);
+    alert("도서 목록을 불러오지 못했습니다.");
+  }
+}
+
+/**
+ * <tbody>에 행 렌더링
+ * @param {Array<{id:number,title:string,author:string,isbn:string,price:number,publishDate?:string}>} books
+ */
+function renderBookTable(books) {
+  const tbody = $("#bookTableBody");
+  tbody.innerHTML = "";
+
+  books.forEach(b => {
+    const tr = document.createElement("tr");
+
+    const tTitle = document.createElement("td");
+    tTitle.textContent = b.title;
+
+    const tAuthor = document.createElement("td");
+    tAuthor.textContent = b.author;
+
+    const tIsbn = document.createElement("td");
+    tIsbn.textContent = b.isbn;
+
+    const tPrice = document.createElement("td");
+    tPrice.textContent = new Intl.NumberFormat("ko-KR").format(b.price);
+
+    const tDate = document.createElement("td");
+    tDate.textContent = b.publishDate ?? "";
+
+    const tAction = document.createElement("td");
+    const delBtn = document.createElement("button");
+    delBtn.className = "delete-btn";
+    delBtn.textContent = "삭제";
+    delBtn.onclick = () => deleteBook(b.id);
+    tAction.appendChild(delBtn);
+
+    tr.append(tTitle, tAuthor, tIsbn, tPrice, tDate, tAction);
+    tbody.appendChild(tr);
+  });
+}
+
+// ======== 등록(POST) ========
+async function addBook(book) {
+  try {
+    const resp = await fetch(API_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(book),
+    });
+
+    if (resp.status === 201 || resp.ok) {
+      showError("");
+      $("#bookForm").reset();
+      await loadBooks();
+    } else {
+      const errJson = await resp.json().catch(() => ({}));
+      const msg = errJson?.message || `등록 실패: ${resp.status}`;
+      showError(msg);
+    }
+  } catch (err) {
+    console.error(err);
+    showError("서버 통신 중 오류가 발생했습니다.");
+  }
+}
+
+// ======== 삭제(DELETE) ========
+async function deleteBook(id) {
+  if (!confirm("정말 삭제하시겠습니까?")) return;
+  try {
+    const resp = await fetch(`${API_BASE}/${id}`, { method: "DELETE" });
+    if (resp.status === 204 || resp.ok) {
+      await loadBooks();
+    } else {
+      const errJson = await resp.json().catch(() => ({}));
+      alert(errJson?.message || `삭제 실패: ${resp.status}`);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("삭제 중 오류가 발생했습니다.");
+  }
+}
+
+// ======== 폼 바인딩 ========
+function bindForm() {
+  const form = $("#bookForm");
+  const cancelBtn = $("#cancelBtn");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const book = {
+      title: $("#title").value.trim(),
+      author: $("#author").value.trim(),
+      isbn: $("#isbn").value.trim(),
+      price: $("#price").value.trim(),
+      publishDate: $("#publishDate").value || null
+    };
+
+    const valid = validateBook(book);
+    if (valid !== true) {
+      showError(valid);
+      return;
+    }
+
+    showError("");
+    await addBook(book);
+  });
+
+  // (추후 수정 기능 붙이면 보이도록 사용)
+  cancelBtn.addEventListener("click", () => {
+    form.reset();
+    showError("");
+    cancelBtn.style.display = "none";
+  });
+}
+
+// ======== 초기화 ========
+window.addEventListener("DOMContentLoaded", async () => {
+  bindForm();
+  await loadBooks(); // 처음 진입 시 목록 로딩
 });
-//StudentForm 의 Submit 이벤트 처리하기
-studentForm.addEventListener("submit", function (event) {
-    //기본으로 설정된 Event가 동작하지 않도록 하기 위함
-    event.preventDefault();
-    console.log("Form 이 체출 되었음....")
-
-    //FormData 객체생성 <form>엘리먼트를 객체로 변환
-    const stuFormData = new FormData(studentForm);
-    // stuFormData.forEach((value, key) => {
-    //     console.log(key + ' = ' + value);
-    // });
-
-    //사용자 정의 Student Object Literal 객체생성 (공백 제거 trim())
-    const studentData = {
-        name: stuFormData.get("name").trim(),
-        studentNumber: stuFormData.get("studentNumber").trim(),
-        address: stuFormData.get("address").trim(),
-        phoneNumber: stuFormData.get("phoneNumber").trim(),
-        email: stuFormData.get("email").trim(),
-        dateOfBirth: stuFormData.get("dateOfBirth"),
-    }
-
-    //유효성 체크하는 함수 호출하기
-    if (!validateStudent(studentData)) {
-        //검증체크 실패하면 리턴하기
-        return;
-    }
-
-    //유효한 데이터 출력하기
-    console.log(studentData);
-
-}); //submit 이벤트
-
-//입력항목의 값의 유효성을 체크하는 함수
-function validateStudent(student) {// 필수 필드 검사
-    if (!student.name) {
-        alert("이름을 입력해주세요.");
-        return false;
-    }
-
-    if (!student.studentNumber) {
-        alert("학번을 입력해주세요.");
-        return false;
-    }
-    // 학번 형식 검사 (예: 영문과 숫자 조합)
-    //const studentNumberPattern = /^[A-Za-z0-9]+$/;
-    const studentNumberPattern = /^[A-Za-z]\d{5}$/;
-    if (!studentNumberPattern.test(student.studentNumber)) {
-        alert("학번은 영문(S)과 숫자(5자리)만 입력 가능합니다.");
-        return false;
-    }
-
-    if (!student.address) {
-        alert("주소를 입력해주세요.");
-        return false;
-    }
-
-    if (!student.phoneNumber) {
-        alert("전화번호를 입력해주세요.");
-        return false;
-    }
-
-    if (!student.email) {
-        alert("이메일을 입력해주세요.");
-        return false;
-    }
-
-    // 전화번호 형식 검사
-    const phonePattern = /^[0-9-\s]+$/;
-    if (!phonePattern.test(student.phoneNumber)) {
-        alert("올바른 전화번호 형식이 아닙니다.");
-        return false;
-    }
-
-    // 이메일 형식 검사 (입력된 경우에만)
-    if (student.email && !isValidEmail(student.email)) {
-        alert("올바른 이메일 형식이 아닙니다.");
-        return false;
-    }
-
-    return true;
-}//validateStudent
-
-// 이메일 유효성 검사
-function isValidEmail(email) {
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailPattern.test(email);
-}//isValidEmail
-
-//Student(학생) 목록을 Load 하는 함수
-function loadStudents() {
-    console.log("학생 목록 Load 중.....");
-    fetch(`${API_BASE_URL}/api/students`) //Promise
-        .then((response) => {
-            if (!response.ok) {
-                throw new Error("학생 목록을 불러오는데 실패했습니다!.");
-            }
-            return response.json();
-        })
-        .then((students) => renderStudentTable(students))
-        .catch((error) => {
-            console.log("Error: " + error);
-            alert("학생 목록을 불러오는데 실패했습니다!.");
-        });
-};
-
-function renderStudentTable(students) {
-    console.log(students);
-    studentTableBody.innerHTML = "";
-    // [{},{},{}] [] - students, {} - student
-    students.forEach((student) => {
-        //<tr> 엘리먼트를 생성하기 <tr><td>홍길동</td><td>aaa</td></tr>
-        const row = document.createElement("tr");
-        
-        //<tr>의 content을 동적으로 생성
-        row.innerHTML = `
-                    <td>${student.name}</td>
-                    <td>${student.studentNumber}</td>
-                    <td>${student.detail ? student.detail.address : "-"}</td>
-                    <td>${student.detail?.phoneNumber?? "-"}</td>
-                    <td>${student.detail?.email ?? "-"}</td>
-                    <td>${student.detail?.dateOfBirth ?? "-"}</td>
-                    <td>
-                        <button class="edit-btn" onclick="editStudent(${student.id})">수정</button>
-                        <button class="delete-btn" onclick="deleteStudent(${student.id})">삭제</button>
-                    </td>
-                `;
-        //<tbody>의 아래에 <tr>을 추가시켜 준다.
-        studentTableBody.appendChild(row);
-    });    
-}//renderStudentTable

@@ -8,9 +8,11 @@ const studentForm = document.getElementById("studentForm");
 const studentTableBody = document.getElementById("studentTableBody");
 const submitButton = document.querySelector("button[type='submit']");
 const cancelButton = document.querySelector(".cancel-btn");
+const formErrorSpan = document.getElementById("formError");
 
 //Document Load 이벤트 처리하기
 document.addEventListener("DOMContentLoaded", function () {
+    //resetForm();
     loadStudents();
 });
 //StudentForm 의 Submit 이벤트 처리하기
@@ -47,10 +49,10 @@ studentForm.addEventListener("submit", function (event) {
     console.log(studentData);
 
     //현재 수정중인 학생Id가 있으면 수정처리
-    if(editingStudentId){
+    if (editingStudentId) {
         //서버로 Student 수정 요청하기
         updateStudent(editingStudentId, studentData);
-    }else {
+    } else {
         //서버로 Student 등록 요청하기
         createStudent(studentData);
     }
@@ -80,15 +82,16 @@ function createStudent(studentData) {
             return response.json();
         })
         .then((result) => {
-            alert("학생이 성공적으로 등록되었습니다!");
+            showSuccess("학생이 성공적으로 등록되었습니다!");
             //입력 Form의 input의 값 초기화
             studentForm.reset();
+            //resetForm();
             //목록 새로 고침
             loadStudents();
         })
         .catch((error) => {
             console.log('Error : ', error);
-            alert(error.message);
+            showError(error.message);
         });
 }//createStudent
 
@@ -114,10 +117,14 @@ function deleteStudent(studentId, studentName) {
                     throw new Error(errorData.message || '학생 삭제에 실패했습니다.')
                 }
             }
-            alert("학생이 성공적으로 삭제되었습니다!");
+            showSuccess("학생이 성공적으로 삭제되었습니다!");
             //목록 새로 고침
             loadStudents();
         })
+        .catch((error) => {
+            console.log('Error : ', error);
+            showError(error.message);
+        });
 }//deleteStudent
 
 //학생 수정전에 데이터를 로드하는 함수
@@ -155,7 +162,7 @@ function editStudent(studentId) {
         })
         .catch((error) => {
             console.log('Error : ', error);
-            alert(error.message);
+            showError(error.message);
         });
 }//editStudent
 
@@ -183,7 +190,7 @@ function updateStudent(studentId, studentData) {
             return response.json();
         })
         .then((result) => {
-            alert("학생이 성공적으로 수정되었습니다!");
+            showSuccess("학생이 성공적으로 수정되었습니다!");
             //등록모드로 전환
             resetForm();
             //목록 새로 고침
@@ -191,7 +198,7 @@ function updateStudent(studentId, studentData) {
         })
         .catch((error) => {
             console.log('Error : ', error);
-            alert(error.message);
+            showError(error.message);
         });
 }//updateStudent
 
@@ -205,6 +212,8 @@ function resetForm() {
     submitButton.textContent = "학생 등록";
     //cancel 버튼의 사라지게
     cancelButton.style.display = 'none';
+    //error message 초기화
+    clearMessages();
 }//resetForm
 
 
@@ -270,16 +279,26 @@ function isValidEmail(email) {
 function loadStudents() {
     console.log("학생 목록 Load 중.....");
     fetch(`${API_BASE_URL}/api/students`) //Promise
-        .then((response) => {
-            // if (!response.ok) {
-            //     throw new Error("<<< 학생 목록을 불러오는데 실패했습니다!. ");
-            // }
+        .then(async (response) => {
+            if (!response.ok) {
+                //응답 본문을 읽어서 에러 메시지 추출
+                const errorData = await response.json();
+                throw new Error(`${errorData.message}`);
+            }
             return response.json();
         })
         .then((students) => renderStudentTable(students))
         .catch((error) => {
             console.log(error);
-            alert(">>> 학생 목록을 불러오는데 실패했습니다!.");
+            //alert(">>> 학생 목록을 불러오는데 실패했습니다!.");
+            showError(error.message);
+            studentTableBody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #dc3545;">
+                        오류: 데이터를 불러올 수 없습니다.
+                    </td>
+                </tr>
+            `;
         });
 };
 
@@ -308,3 +327,20 @@ function renderStudentTable(students) {
         studentTableBody.appendChild(row);
     });
 }//renderStudentTable
+
+//성공 메시지 출력
+function showSuccess(message) {
+    formErrorSpan.textContent = message;
+    formErrorSpan.style.display = 'block';
+    formErrorSpan.style.color = '#28a745';
+}
+//에러 메시지 출력
+function showError(message) {
+    formErrorSpan.textContent = message;
+    formErrorSpan.style.display = 'block';
+    formErrorSpan.style.color = '#dc3545';
+}
+//메시지 초기화
+function clearMessages() {
+    formErrorSpan.style.display = 'none';
+}
