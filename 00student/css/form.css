@@ -187,3 +187,28 @@ tr:hover {
     overflow: hidden;
     /* 컨테이너 내용이 경계를 넘어갈 때 숨김 */
 }
+
+.button-group {
+    margin-top: 15px;
+    /* 위쪽 여백 */
+    display: flex;
+    /* 플렉스 레이아웃 사용 */
+    align-items: center;
+    /* 수직 중앙 정렬 */
+    flex-wrap: wrap;
+    /* 화면이 작을 때 줄바꿈 허용 */
+    gap: 10px;
+    /* 요소들 간의 간격 */
+}
+
+/* 에러 메시지 스타일 */
+.error-message {
+    color: #dc3545;
+    /* 빨간색 텍스트 (Bootstrap danger 색상) */
+    font-size: 0.9em;
+    /* 상대적으로 작은 폰트 크기 */
+    margin-top: 5px;
+    /* 위쪽 여백 */
+    display: none;
+    /* 기본적으로 숨김 */
+}
