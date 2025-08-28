@@ -1,37 +1,37 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>도서 관리 시스템</title>
-  <link rel="stylesheet" href="./css/form.css"/>
+  <link rel="stylesheet" href="./css/form.css" />
 </head>
 <body>
   <h1>도서 관리 시스템</h1>
 
-  <!-- 등록/수정 폼 -->
+  <!-- 등록 폼 -->
   <div class="form-container">
     <h2>도서 등록</h2>
     <form id="bookForm">
       <div class="form-grid">
         <div class="form-group">
           <label for="title">제목</label>
-          <input type="text" id="title" name="title" />
+          <input type="text" id="title" name="title" required />
         </div>
 
         <div class="form-group">
           <label for="author">저자</label>
-          <input type="text" id="author" name="author" />
+          <input type="text" id="author" name="author" required />
         </div>
 
         <div class="form-group">
           <label for="isbn">ISBN</label>
-          <input type="text" id="isbn" name="isbn" />
+          <input type="text" id="isbn" name="isbn" required />
         </div>
 
         <div class="form-group">
           <label for="price">가격</label>
-          <input type="number" id="price" name="price" />
+          <input type="number" id="price" name="price" min="0" required />
         </div>
 
         <div class="form-group">
@@ -43,42 +43,17 @@
           <label for="publisher">출판사</label>
           <input type="text" id="publisher" name="publisher" />
         </div>
+      </div>
 
-        <div class="form-group">
-          <label for="language">언어</label>
-          <input type="text" id="language" name="language" />
-        </div>
-
-        <div class="form-group">
-          <label for="pageCount">페이지 수</label>
-          <input type="number" id="pageCount" name="pageCount" />
-        </div>
-
-        <div class="form-group">
-          <label for="edition">에디션</label>
-          <input type="text" id="edition" name="edition" />
-        </div>
-
-        <div class="form-group">
-          <label for="coverImageUrl">표지 이미지</label>
-          <input type="url" id="coverImageUrl" name="coverImageUrl" />
-        </div>
-
-        <div class="form-group" style="grid-column: span 2;">
-          <label for="description">설명</label>
-          <textarea id="description" name="description" rows="3"></textarea>
-        </div>
-
-        <div class="button-group">
-          <button type="submit">도서 등록</button>
-          <button type="button" class="cancel-btn" id="cancelBtn" style="display:none">취소</button>
-          <span id="formError" class="error-message"></span>
-        </div>
+      <div class="button-group">
+        <button type="submit" id="submitBtn">도서 등록</button>
+        <button type="button" class="cancel-btn" id="cancelBtn" style="display:none">취소</button>
+        <span id="formError" class="error-message"></span>
       </div>
     </form>
   </div>
 
-  <!-- 목록 -->
+  <!-- 목록 테이블 -->
   <div class="table-container">
     <h2>도서 리스트</h2>
     <table>
