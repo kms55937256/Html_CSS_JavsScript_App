@@ -92,14 +92,12 @@ async function updateBook(id, book) {
       return;
     }
 
-    // 폼 리셋 및 상태 초기화
     $("#bookForm").reset();
     editingBookId = null;
     $("#submitBtn").textContent = "도서 등록";
     $("#cancelBtn").style.display = "none";
     showError("");
 
-    // ✅ 최신 목록 다시 로딩
     await loadBooks();
 
   } catch (err) {
@@ -162,7 +160,9 @@ function bindForm() {
       isbn: $("#isbn").value.trim(),
       price: Number($("#price").value),
       publishDate: $("#publishDate").value || null,
-      detail: { publisher: $("#publisher").value.trim() }
+      detailRequest: {   // ✅ detail → detailRequest 로 맞춤
+        publisher: $("#publisher").value.trim()
+      }
     };
 
     const valid = validateBook(book);
